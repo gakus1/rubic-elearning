@@ -9,7 +9,6 @@ const supabase = createClient(
 
 export default function Home() {
   const [view, setView] = useState('organizer')
-  const [courses, setCourses] = useState([])
   const [modules, setModules] = useState([])
   const [questions, setQuestions] = useState([])
   const [selected, setSelected] = useState(null)
@@ -22,7 +21,6 @@ export default function Home() {
     async function load() {
       const { data: c } = await supabase.from('courses').select('*').eq('status', 'published')
       if (c && c.length > 0) {
-        setCourses(c)
         setSelected(c[0])
         const { data: m } = await supabase.from('course_modules').select('*').eq('course_id', c[0].id).order('sort_order')
         if (m) setModules(m)
@@ -40,14 +38,13 @@ export default function Home() {
   const mod = modules[step] || null
   const mqs = mod ? questions.filter((q: any) => q.module_id === mod.id) : []
   const allDone = mqs.every((q: any) => answers[q.id])
-  const score = submitted ? Math.round((Object.entries(answers).filter(([qid, ans]) => questions.find((q: any) => q.id === qid)?.correct_option_id === ans).length / Math.max(questions.length, 1)) * 100) : 0
+  const correct = Object.entries(answers).filter(([qid, ans]) => questions.find((q: any) => q.id === qid)?.correct_option_id === ans).length
+  const score = submitted ? Math.round((correct / Math.max(questions.length, 1)) * 100) : 0
   const passed = score >= (selected?.pass_threshold || 70)
 
-  const s = (obj: any) => Object.entries(obj).map(([k,v]) => `${k}:${v}`).join(';')
-
-  if (loading) return 
+  if (loading) { return 
 Laster kurs...
-
+ }
 
   return (
     
@@ -134,6 +131,22 @@ Kursmoduler
 
         )}
 
+        {view==='participant' && selected && !submitted && !mod && (
+          
+
+            
+{selected.title}
+
+            
+
+{selected.description}
+
+
+             setStep(0)} style={{background:'#534AB7',color:'#fff',border:'none',padding:'10px 24px',borderRadius:8,fontSize:14,cursor:'pointer'}}>Start kurs
+          
+
+        )}
+
         {view==='participant' && selected && !submitted && mod && (
           
 
@@ -156,11 +169,11 @@ Kursmoduler
               
 
                 
-Innhold for dette steget vises her.
+Innhold vises her.
 
                 
 
-                   setStep(s => Math.min(s+1,modules.length-1))} style={{background:'#534AB7',color:'#fff',border:'none',padding:'8px 20px',borderRadius:8,fontSize:13,cursor:'pointer'}}>Neste →
+                   setStep(s => Math.min(s+1,modules.length-1))} style={{background:'#534AB7',color:'#fff',border:'none',padding:'8px 20px',borderRadius:8,fontSize:13,cursor:'pointer'}}>Neste
                 
 
               
@@ -189,7 +202,7 @@ Innhold for dette steget vises her.
                 ))}
                 
 
-                  {step setStep(s => s+1)} disabled={!allDone} style={{background:allDone?'#534AB7':'#ccc',color:'#fff',border:'none',padding:'8px 20px',borderRadius:8,fontSize:13,cursor:allDone?'pointer':'not-allowed'}}>Neste →
+                  {step setStep(s => s+1)} disabled={!allDone} style={{background:allDone?'#534AB7':'#ccc',color:'#fff',border:'none',padding:'8px 20px',borderRadius:8,fontSize:13,cursor:allDone?'pointer':'not-allowed'}}>Neste
                     :  setSubmitted(true)} disabled={!allDone} style={{background:allDone?'#534AB7':'#ccc',color:'#fff',border:'none',padding:'8px 20px',borderRadius:8,fontSize:13,cursor:allDone?'pointer':'not-allowed'}}>Lever svar
                   }
                 
@@ -197,22 +210,6 @@ Innhold for dette steget vises her.
               
 
             )}
-          
-
-        )}
-
-        {view==='participant' && selected && !submitted && !mod && (
-          
-
-            
-{selected.title}
-
-            
-
-{selected.description}
-
-
-             setStep(0)} style={{background:'#534AB7',color:'#fff',border:'none',padding:'10px 24px',borderRadius:8,fontSize:14,cursor:'pointer'}}>Start kurs
           
 
         )}
@@ -263,12 +260,13 @@ Resultater — {selected?.title}
 
             
 
-Kursdata er lastet fra Supabase.
+Kursdata lastet fra Supabase.
 
 
           
 
         )}
+
       
 
     
